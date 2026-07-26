@@ -44,7 +44,7 @@ async def get_task(id: int):
 async def create_task(res:dict):
     title = res.get('title')
     if title is None or str(title).strip() == '':
-        raise HTTPException(status_code=400, detail="Missing res")
+        raise HTTPException(status_code=400, detail="Title is either missing or empty.")
     title = str(title).strip()
     task = Task(title=title)
     tasks.append(task)
