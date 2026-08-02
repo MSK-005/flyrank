@@ -11,9 +11,9 @@ class Task(BaseModel):
     done: bool = False
 
 tasks = [
-    Task(title="Complete the PR process for PyTorch"),
+    Task(title="Complete CN assignment"),
     Task(title="Write the data ingestion logic for the GDACS API"),
-    Task(title="Read and understand the issue created by Mr. Harsh")
+    Task(title="Walk the dog")
 ]
 
 @app.get("/")
