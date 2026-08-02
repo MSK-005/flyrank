@@ -9,8 +9,8 @@ To fetch anything from an API, we make a GET request. Since we are requesting to
 
 ## Updating a task
 To update anything, we send a PUT request, along with the ID of the item we want to update. In this example, we send a PUT request to update the status of the task we created in "Creating a task" section. In that example, the status of the task was by default set to false. Now we change it to true, to indicate the task is done.
-![Updating our task](/docs/swagger/update_task_1.png "Updating our task")
-![Updating our task](/docs/swagger/update_task_2.png "Updating our task")
+![Updating our task](/docs/swagger/update_task_1.png "Updating our task (1)")
+![Updating our task](/docs/swagger/update_task_2.png "Updating our task (2)")
 
 ## Deleting a task
 To delete anything, we send a DELETE request to the server, along with the ID of the item to delete. In this example, we delete the task we created in the "Creating a task" section.
