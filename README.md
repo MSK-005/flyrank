@@ -1,4 +1,10 @@
 # FlyRank Assignment 1
+## Setting up
+Install the prerequisite libraries by using the command:
+```pip install -r requirements.txt```
+After that, run the server:
+```fastapi dev```
+This will start the server on `http://localhost:8000/`
 ## Creating a task
 We create a task by sending a POST request, with the title mentioned in the payload. SwaggerUI allows us to test our CRUD API's endpoints without manually writing `curl` commands. In this example, we create a task to "wash the dishes." Note that there were already 3 tasks created in memory before we created this task.
 ![Creating our task](/docs/swagger/create_task.png "Creating our task")
@@ -14,7 +20,35 @@ To update anything, we send a PUT request, along with the ID of the item we want
 
 ## Deleting a task
 To delete anything, we send a DELETE request to the server, along with the ID of the item to delete. In this example, we delete the task we created in the "Creating a task" section.
-![Deleting our task](/docs/swagger/delete_task.png)
+![Deleting our task](/docs/swagger/delete_task.png "Deleting our task")
+
+## Sample Request & Response (`curl -i`)
+The request:
+```
+curl -i -X POST http://localhost:8000/tasks -H "Content-Type: application/json" -d '{"title":"Buy milk"}'
+```
+The response:
+```
+HTTP/1.1 201 Created
+date: Mon, 03 Aug 2026 08:36:04 GMT
+server: uvicorn
+content-length: 40
+content-type: application/json
+
+{"id":3,"title":"Buy milk","done":false}
+```
+## All Endpoints
+| Method | Endpoint | Description | Success Code | Error Codes |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/` | API metadata | `200 OK` | — |
+| `GET` | `/health` | Health check | `200 OK` | — |
+| `GET` | `/tasks` | List tasks (supports `?search_string=` & `?done=`) | `200 OK` | — |
+| `GET` | `/tasks/{id}` | Get task by ID | `200 OK` | `404` |
+| `POST` | `/tasks` | Create task | `201 Created` | `400` |
+| `PUT` | `/tasks/{id}` | Update task | `200 OK` | `400`, `404` |
+| `DELETE` | `/tasks/{id}` | Delete task | `204 No Content` | `404` |
+| `GET` | `/stats` | Aggregate stats | `200 OK` | — |
+| `POST` | `/reset` | Re-seed in-memory storage | `200 OK` | — |
 
 ## The mortality experiment
 Since all tasks were created in memory and not stored in a database, when we reset the server, all of our created tasks will be lost. The memory is not a good place to store data that needs to exist permanently. For that, we need a database.
