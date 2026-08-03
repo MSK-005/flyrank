@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 import itertools
 
 app = FastAPI()
-_id_iter: int = itertools.count()
+_id_iter = itertools.count()
 
 class Task(BaseModel):
     id: int = Field(default_factory=lambda: next(_id_iter))
@@ -29,8 +29,22 @@ async def health():
     return { "status": "ok" }
 
 @app.get("/tasks")
-async def get_all_tasks():
-    return tasks
+async def get_all_tasks(search_string: str | None = None, done: bool | None = None):
+    return [task for task in tasks
+            if (done is None or task.done is done)
+            and (search_string is None or search_string.lower().strip() in task.title.lower())]
+
+@app.get("/stats")
+async def stats():
+    total_tasks = len(tasks)
+    done = len([task for task in tasks if task.done == True])
+    unfinished = total_tasks - done
+
+    return {
+        "total": total_tasks,
+        "done": done,
+        "open": unfinished
+    }
 
 @app.get("/tasks/{id}")
 async def get_task(id: int):
@@ -48,6 +62,17 @@ async def create_task(res: dict):
     task = Task(title=title)
     tasks.append(task)
     return task
+
+@app.post("/reset")
+async def reset_tasks():
+    global _id_iter, tasks
+    _id_iter = itertools.count()
+    tasks = [
+        Task(title="Complete CN assignment"),
+        Task(title="Write the data ingestion logic for the GDACS API"),
+        Task(title="Walk the dog")
+    ]
+    return {"message": "reset successful" }
 
 @app.put("/tasks/{id}")
 async def update_task(id: int, res: dict):

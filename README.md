@@ -15,3 +15,6 @@ To update anything, we send a PUT request, along with the ID of the item we want
 ## Deleting a task
 To delete anything, we send a DELETE request to the server, along with the ID of the item to delete. In this example, we delete the task we created in the "Creating a task" section.
 ![Deleting our task](/docs/swagger/delete_task.png)
+
+## The mortality experiment
+Since all tasks were created in memory and not stored in a database, when we reset the server, all of our created tasks will be lost. The memory is not a good place to store data that needs to exist permanently. For that, we need a database.
