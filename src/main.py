@@ -1,8 +1,17 @@
-from fastapi import FastAPI, HTTPException, status, Response
-from pydantic import BaseModel, Field
 import itertools
 
-app = FastAPI()
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, status, Response
+from pydantic import BaseModel, Field
+
+from src.database import init_db
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    yield
+
+app = FastAPI(lifespan=lifespan)
 _id_iter = itertools.count()
 
 class Task(BaseModel):
