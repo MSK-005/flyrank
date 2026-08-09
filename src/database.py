@@ -14,18 +14,22 @@ def get_db_connection():
 def init_db():
     with get_db_connection() as connection:
         cursor = connection.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS tasks ("
-        "id INTEGER PRIMARY KEY AUTOINCREMENT," 
-        "title TEXT NOT NULL," 
-        "done BOOLEAN NOT NULL DEFAULT 0" 
-        ")")
+        cursor.execute("""
+                       CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        done BOOLEAN NOT NULL DEFAULT 0
+        )
+        """)
 
         cursor.execute("SELECT COUNT(*) FROM tasks")
         count = cursor.fetchone()[0]
         if count == 0:
-            cursor.executemany("INSERT INTO tasks (title, done) VALUES (?, ?)",
+            cursor.executemany("""
+            INSERT INTO tasks (title, done) VALUES (?, ?),
                 [
                 ("Complete CN assignment", False),
                 ("Write data ingestion logic", False),
                 ("Walk the dog", False)
-            ])
+            ]
+            """)

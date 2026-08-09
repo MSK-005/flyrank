@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status, Response
 from pydantic import BaseModel, Field
 
-from src.database import init_db
+from src.database import get_db_connection, init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,9 +39,24 @@ async def health():
 
 @app.get("/tasks")
 async def get_all_tasks(search_string: str | None = None, done: bool | None = None):
-    return [task for task in tasks
-            if (done is None or task.done is done)
-            and (search_string is None or search_string.lower().strip() in task.title.lower())]
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        conditions = []
+        params = []
+        if search_string is not None:
+            conditions.append("title LIKE ?")
+            params.append(f"%{search_string}%")
+        if done is not None:
+            conditions.append("done = ?")
+            params.append(done)
+
+        query = "SELECT * FROM tasks"
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
+        cursor.execute(query, tuple(params))
+        results = cursor.fetchall()
+    return [dict(result) for result in results]
+    
 
 @app.get("/stats")
 async def stats():
@@ -57,6 +72,16 @@ async def stats():
 
 @app.get("/tasks/{id}")
 async def get_task(id: int):
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (id,))
+        task = cursor.fetchone()
+
+    if task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task {id} was not found.")
+
+    return dict(task)
+
     task = next((item for item in tasks if item.id == id), None)
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task {id} was not found.")
