@@ -78,24 +78,28 @@ async def get_task(id: int):
         task = cursor.fetchone()
 
     if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task {id} was not found.")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"error": "Task not found"})
 
     return dict(task)
-
-    task = next((item for item in tasks if item.id == id), None)
-    if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task {id} was not found.")
-    return task
 
 @app.post("/tasks", status_code=status.HTTP_201_CREATED)
 async def create_task(res: dict):
     title = res.get('title')
     if title is None or str(title).strip() == '':
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Title is either missing or empty.")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail={"error": "Title is required."})
     title = str(title).strip()
-    task = Task(title=title)
-    tasks.append(task)
-    return task
+    done = False
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", (title, done))
+        connection.commit()
+        task_id = cursor.lastrowid
+
+    return {
+        "id": task_id,
+        "title": title,
+        "done": done
+    }
 
 @app.post("/reset")
 async def reset_tasks():
