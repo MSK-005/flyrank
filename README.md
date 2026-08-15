@@ -52,3 +52,24 @@ content-type: application/json
 
 ## The Mortality Experiment
 Since all tasks were created in memory and not stored in a database, when we reset the server, all of our created tasks will be lost. The memory is not a good place to store data that needs to exist permanently. For that, we need a database.
+
+# Assignment 2 - Adding a Database
+## Data Now Lives Permanently
+Previously, all data was stored in memory, and any server restarts meant loss of data. Now with the introduction of a database, our data stays safe and lives on. To monitor our database, we use [DB Browser for SQLite](https://sqlitebrowser.org/). We use the following SQL command to change the completion status of a task with ID 2.
+```
+UPDATE tasks SET done = 1 WHERE id = 2;
+```
+
+To check if the changes have been made, we make a `curl` request.
+```
+curl http://localhost:8000/tasks
+```
+The response:
+```
+[
+    {"id":1,"title":"Complete CN assignment","done":0},
+{"id":2,"title":"Write data ingestion logic","done":1},
+{"id":3,"title":"Walk the dog","done":0}
+]
+```
+The request returns all tasks, and we can see the task with ID = 2 has changed its completion status.
