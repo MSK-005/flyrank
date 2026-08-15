@@ -1,8 +1,6 @@
-import itertools
-
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status, Response
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from src.database import get_db_connection, init_db
 
@@ -12,18 +10,6 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
-_id_iter = itertools.count()
-
-class Task(BaseModel):
-    id: int = Field(default_factory=lambda: next(_id_iter))
-    title: str
-    done: bool = False
-
-tasks = [
-    Task(title="Complete CN assignment"),
-    Task(title="Write the data ingestion logic for the GDACS API"),
-    Task(title="Walk the dog")
-]
 
 @app.get("/")
 async def root():
@@ -103,13 +89,7 @@ async def create_task(res: dict):
 
 @app.post("/reset")
 async def reset_tasks():
-    global _id_iter, tasks
-    _id_iter = itertools.count()
-    tasks = [
-        Task(title="Complete CN assignment"),
-        Task(title="Write the data ingestion logic for the GDACS API"),
-        Task(title="Walk the dog")
-    ]
+        
     return {"message": "reset successful" }
 
 @app.put("/tasks/{id}")
@@ -123,21 +103,35 @@ async def update_task(id: int, res: dict):
     if done is not None and not isinstance(done, bool):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="The status of the task must be a boolean value.")
 
-    task_idx = next((idx for idx, task in enumerate(tasks) if task.id == id), None)
-    if task_idx is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
+    conditions = []
+    params = []
     if title is not None:
-        tasks[task_idx].title = str(title.strip())
+        conditions.append("title = ?")
+        params.append(title.strip())
     if done is not None:
-        tasks[task_idx].done = done
+        conditions.append("done = ?")
+        params.append(1 if done else 0)
+    params.append(id)
 
-    return tasks[task_idx]    
+    query = f"UPDATE tasks SET {", ".join(conditions)} WHERE id = ?"
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute(query, tuple(params))
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
+        cursor.execute("SELECT * FROM tasks WHERE id = ?", (id,))
+        new_task = cursor.fetchone()
+    return (dict(new_task))
 
 
 @app.delete("/tasks/{id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(id: int):
-    task = next((task for task in tasks if task.id == id), None)
-    if task is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
-    tasks.remove(task)
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM tasks WHERE id = ?", (id,))
+        connection.commit()
+
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Task with ID {id} not found.")
