@@ -1,7 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, status, Response
-from pydantic import Field
-
+from fastapi import FastAPI, HTTPException, status
 from src.database import get_db_connection, init_db
 
 @asynccontextmanager
@@ -46,14 +44,20 @@ async def get_all_tasks(search_string: str | None = None, done: bool | None = No
 
 @app.get("/stats")
 async def stats():
-    total_tasks = len(tasks)
-    done = len([task for task in tasks if task.done == True])
-    unfinished = total_tasks - done
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute("SELECT COUNT(*) FROM tasks;")
+        total_tasks = cursor.fetchone()[0]
+
+        cursor.execute("SELECT COUNT(*) FROM tasks WHERE done = TRUE")
+        done_count = cursor.fetchone()[0]
+
+        unfinished_count = total_tasks - done_count
 
     return {
         "total": total_tasks,
-        "done": done,
-        "open": unfinished
+        "done": done_count,
+        "open": unfinished_count
     }
 
 @app.get("/tasks/{id}")
@@ -89,7 +93,11 @@ async def create_task(res: dict):
 
 @app.post("/reset")
 async def reset_tasks():
-        
+    with get_db_connection() as connection:
+        cursor = connection.cursor()
+        cursor.execute("DELETE FROM tasks")
+        init_db()
+        connection.commit()
     return {"message": "reset successful" }
 
 @app.put("/tasks/{id}")
@@ -110,10 +118,10 @@ async def update_task(id: int, res: dict):
         params.append(title.strip())
     if done is not None:
         conditions.append("done = ?")
-        params.append(1 if done else 0)
+        params.append(done)
     params.append(id)
 
-    query = f"UPDATE tasks SET {", ".join(conditions)} WHERE id = ?"
+    query = f"UPDATE tasks SET {', '.join(conditions)} WHERE id = ?"
     with get_db_connection() as connection:
         cursor = connection.cursor()
         cursor.execute(query, tuple(params))
