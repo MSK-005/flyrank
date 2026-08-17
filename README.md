@@ -68,8 +68,8 @@ The response:
 ```
 [
     {"id":1,"title":"Complete CN assignment","done":0},
-{"id":2,"title":"Write data ingestion logic","done":1},
-{"id":3,"title":"Walk the dog","done":0}
+    {"id":2,"title":"Write data ingestion logic","done":1},
+    {"id":3,"title":"Walk the dog","done":0}
 ]
 ```
 The request returns all tasks, and we can see the task with ID = 2 has changed its completion status.

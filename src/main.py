@@ -22,7 +22,7 @@ async def health():
     return { "status": "ok" }
 
 @app.get("/tasks")
-async def get_all_tasks(search_string: str | None = None, done: bool | None = None):
+async def get_all_tasks(search_string: str | None = None, sort_by_title: bool | None = None, done: bool | None = None):
     with get_db_connection() as connection:
         cursor = connection.cursor()
         conditions = []
@@ -37,16 +37,18 @@ async def get_all_tasks(search_string: str | None = None, done: bool | None = No
         query = "SELECT * FROM tasks"
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
+        if sort_by_title is True:
+            query += " ORDER BY LOWER(title) ASC"
+
         cursor.execute(query, tuple(params))
         results = cursor.fetchall()
     return [dict(result) for result in results]
-    
 
 @app.get("/stats")
 async def stats():
     with get_db_connection() as connection:
         cursor = connection.cursor()
-        cursor.execute("SELECT COUNT(*) FROM tasks;")
+        cursor.execute("SELECT COUNT(*) FROM tasks")
         total_tasks = cursor.fetchone()[0]
 
         cursor.execute("SELECT COUNT(*) FROM tasks WHERE done = TRUE")
@@ -95,9 +97,9 @@ async def create_task(res: dict):
 async def reset_tasks():
     with get_db_connection() as connection:
         cursor = connection.cursor()
-        cursor.execute("DELETE FROM tasks")
-        init_db()
+        cursor.execute("DROP TABLE IF EXISTS tasks")
         connection.commit()
+    init_db()
     return {"message": "reset successful" }
 
 @app.put("/tasks/{id}")

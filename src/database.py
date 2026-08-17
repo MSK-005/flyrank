@@ -18,18 +18,35 @@ def init_db():
                        CREATE TABLE IF NOT EXISTS tasks (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
-        done BOOLEAN NOT NULL DEFAULT 0
+        done BOOLEAN NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT NULL
         )
+        """)
+
+        cursor.execute("""
+            CREATE TRIGGER IF NOT EXISTS update_tasks_updated_at
+            AFTER UPDATE ON tasks
+            FOR EACH ROW
+            BEGIN
+                UPDATE tasks
+                SET updated_at = CURRENT_TIMESTAMP
+                WHERE id = NEW.id;
+            END;
         """)
 
         cursor.execute("SELECT COUNT(*) FROM tasks")
         count = cursor.fetchone()[0]
         if count == 0:
-            cursor.executemany("""
-            INSERT INTO tasks (title, done) VALUES (?, ?),
-                [
+            default_tasks = [
                 ("Complete CN assignment", False),
                 ("Write data ingestion logic", False),
                 ("Walk the dog", False)
             ]
-            """)
+            cursor.executemany("""
+            INSERT INTO tasks (title, done) VALUES (?, ?)
+            """,
+               default_tasks
+            )
+
+        connection.commit()
